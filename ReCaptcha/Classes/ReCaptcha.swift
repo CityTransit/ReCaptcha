@@ -201,7 +201,6 @@ public class ReCaptcha {
 
     // MARK: - Development
 
-#if DEBUG
     /// Forces the challenge widget to be explicitly displayed.
     public var forceVisibleChallenge: Bool {
         get { return manager.forceVisibleChallenge }
@@ -219,7 +218,14 @@ public class ReCaptcha {
         get { return manager.shouldSkipForTests }
         set { manager.shouldSkipForTests = newValue }
     }
-#endif
+    
+    /**
+     Allows javascript debug logs
+     */
+    public var debugJavascript: Bool {
+        get { return manager.debugJavascript }
+        set { manager.debugJavascript = newValue }
+    }
 }
 
 // MARK: - Private Methods
@@ -236,9 +242,7 @@ private extension ReCaptcha.Config {
             return url
         }
 
-#if DEBUG
         print("⚠️ WARNING! Protocol not found for ReCaptcha domain (\(url))! You should add http:// or https:// to it!")
-#endif
 
         if let fixedURL = URL(string: "http://" + url.absoluteString) {
             return fixedURL

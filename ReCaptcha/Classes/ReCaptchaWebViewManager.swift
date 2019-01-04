@@ -20,7 +20,6 @@ internal class ReCaptchaWebViewManager {
         static let BotUserAgent = "Googlebot/2.1"
     }
 
-#if DEBUG
     /// Forces the challenge to be explicitly displayed.
     var forceVisibleChallenge = false {
         didSet {
@@ -35,7 +34,9 @@ internal class ReCaptchaWebViewManager {
 
     /// Allows validation stubbing for testing
     public var shouldSkipForTests = false
-#endif
+    
+    /// Allows javascript debugging
+    public var debugJavascript = false
 
     /// Sends the result message
     var completion: ((ReCaptchaResult) -> Void)?
@@ -126,12 +127,11 @@ internal class ReCaptchaWebViewManager {
      Starts the challenge validation
      */
      func validate(on view: UIView) {
-#if DEBUG
         guard !shouldSkipForTests else {
             completion?(.token(""))
             return
         }
-#endif
+
         webView.isHidden = false
         view.addSubview(webView)
 
@@ -204,32 +204,37 @@ fileprivate extension ReCaptchaWebViewManager {
      */
     func handle(result: ReCaptchaDecoder.Result) {
         switch result {
-        case .token(let token):
-            completion?(.token(token))
-
-        case .error(let error):
-            if shouldResetOnError, let view = webView.superview {
-                reset()
-                validate(on: view)
-            }
-            else {
-                completion?(.error(error))
-            }
-
-        case .showReCaptcha:
-            DispatchQueue.once(token: configureWebViewDispatchToken) { [weak self] in
-                guard let `self` = self else { return }
-                self.configureWebView?(self.webView)
-            }
-
-        case .didLoad:
-            // For testing purposes
-            didFinishLoading = true
-
-        case .log(let message):
-            #if DEBUG
-            print("[JS LOG]:", message)
-            #endif
+            case .token(let token):
+                completion?(.token(token))
+                if debugJavascript {
+                    print("[RECAPTCHA JS LOG]: token: ", token)
+                }
+            case .error(let error):
+                if shouldResetOnError, let view = webView.superview {
+                    reset()
+                    validate(on: view)
+                }
+                else {
+                    completion?(.error(error))
+                }
+                if debugJavascript {
+                    print("[RECAPTCHA JS LOG]: error: ", error.description)
+                }
+            case .showReCaptcha:
+                DispatchQueue.once(token: configureWebViewDispatchToken) { [weak self] in
+                    guard let `self` = self else { return }
+                    self.configureWebView?(self.webView)
+                }
+            case .didLoad:
+                // For testing purposes
+                didFinishLoading = true
+                if debugJavascript {
+                    print("[RECAPTCHA JS LOG]: didLoad")
+                }
+            case .log(let message):
+                if debugJavascript {
+                    print("[RECAPTCHA JS LOG]:", message)
+                }
         }
     }
 

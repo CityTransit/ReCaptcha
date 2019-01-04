@@ -9,6 +9,8 @@
   console.log = function(message) {
       post({log: message});
   };
+  
+  window.addEventListener('error', function(event) { console.log(event.message); })
 
   var showReCaptcha = function() {
       console.log("showReCaptcha");
@@ -24,20 +26,28 @@
     .observe(element, {attributes: true, attributeFilter: ['style']})
   };
 
-  var execute = function() {
+  var execute = function(attempts) {
     console.log("executing");
-
-    // Removes ReCaptcha dismissal when clicking outside div area
-    try {
-        document.getElementsByTagName("div")[4].outerHTML = ""
+    
+    if(document.getElementsByTagName("div").length > 3) {
+        // Removes ReCaptcha dismissal when clicking outside div area
+        try {
+            document.getElementsByTagName("div")[4].outerHTML = ""
+        }
+        catch(e) {
+        }
+        
+        // Listens to changes on the div element that presents the ReCaptcha challenge
+        observeDOM(document.getElementsByTagName("div")[3], showReCaptcha);
+        
+        grecaptcha.execute();
+    } else {
+        if(!attempts || attempts <= 10) {
+            setTimeout(function() { execute(attempts ? attempts + 1 : 1); }, 500);
+        } else {
+            throw "Max execute attempts reached";
+        }
     }
-    catch(e) {
-    }
-
-    // Listens to changes on the div element that presents the ReCaptcha challenge
-    observeDOM(document.getElementsByTagName("div")[3], showReCaptcha);
-
-    grecaptcha.execute();
   };
 
   var onSubmit = function(token) {
